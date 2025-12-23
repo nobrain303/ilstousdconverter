@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Test - ILS/USD</title>
+<style>
+body { background: #121417; color: #fff; font-family: Arial, sans-serif; padding: 20px; }
+h1 { color: #4f6fff; }
+.method { margin: 12px 0; padding: 10px; border-radius: 8px; background: #1b1f24; }
+.success { color: #0f0; }
+.fail { color: #f55; }
+</style>
+</head>
+<body>
+
+<h1>Network Methods Test</h1>
+<p>This page will attempt multiple methods to fetch live currency rates.</p>
+<div id="results"></div>
+
+<script>
+const resultsDiv = document.getElementById("results");
+const apiUrl = "https://api.frankfurter.app/latest?from=USD&to=ILS";
+
+// Utility to log results
+function logResult(name, success, data="") {
+    const div = document.createElement("div");
+    div.className = "method";
+    div.innerHTML = <strong>${name}:</strong> <span class="${success ? "success" : "fail"}">${success ? "Success" : "Fail"}</span>${data ? " → " + data : ""};
+    resultsDiv.appendChild(div);
+}
+
+// Method 1: fetch()
+async function testFetch() {
+    try {
+        const res = await fetch(apiUrl);
+        const json = await res.json();
+        logResult("Fetch API", true, Rate: ${json.rates.ILS});
+    } catch(e) {
+        logResult("Fetch API", false, e.message);
+    }
+}
+
+// Method 2: XMLHttpRequest
+function testXHR() {
+    try {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", apiUrl, true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4){
+                if(xhr.status >= 200 && xhr.status < 300){
+                    const data = JSON.parse(xhr.responseText);
+                    logResult("XMLHttpRequest", true, Rate: ${data.rates.ILS});
+                } else {
+                    logResult("XMLHttpRequest", false, Status ${xhr.status});
+                }
+            }
+        };
+        xhr.send();
+    } catch(e) {
+        logResult("XMLHttpRequest", false, e.message);
+    }
+}
+
+// Method 3: Image hack (JSONP fallback)
+function testImageHack() {
+    try {
+        const img = new Image();
+        img.onload = () => logResult("Image Hack", true);
+        img.onerror = () => logResult("Image Hack", false);
+        img.src = apiUrl; // will fail but tests network access
+    } catch(e) {
+        logResult("Image Hack", false, e.message);
+    }
+}
+
+// Method 4: ping via fetch to main domain
+async function testPing() {
+    try {
+        const res = await fetch("https://api.frankfurter.app");
+        logResult("Ping API Domain", true, Status: ${res.status});
+    } catch(e) {
+        logResult("Ping API Domain", false, e.message);
+    }
+}
+
+// Run all tests
+testFetch();
+testXHR();
+testImageHack();
+testPing();
+</script>
+
+</body>
+</html>
